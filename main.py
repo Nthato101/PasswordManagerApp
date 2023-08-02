@@ -1,3 +1,4 @@
+import json
 from tkinter import *
 from tkinter import messagebox
 from passwordgenerator import password
@@ -19,6 +20,13 @@ def save():
     password_entry = password_input.get()
     details = False
 
+    new_data = {
+        f"{website}": {
+            "email": email,
+            "password": password_entry,
+        }
+    }
+
     if website == '':
         messagebox.showerror(title="Website Name Error", message="Please insert the website name.")
     elif email == '':
@@ -33,30 +41,44 @@ def save():
         correct = messagebox.askokcancel(title=f"{website}", message=f"Are these details correct? \nWebsite:{website}\n"
                                                                      f"Email:{email}\nPassword:{password_entry}\n")
         if correct:
+
+            try:
+                with open("data.json", "r") as data_file:
+                    current_data = json.load(data_file)
+                    current_data.update(new_data)
+            except FileNotFoundError:
+                with open("data.json", "w") as data_file:
+                    json.dump(new_data, data_file, indent=4)
+            else:
+                with open("data.json", "w") as data_file:
+                    json.dump(current_data, data_file, indent=4)
+
             messagebox.showinfo(message="Details saved successfully")
-            file = open("data.txt", "a")
-            file.write(f"{website} | {email} | {password_entry}\n")
+
             website_input.delete(0, END)
             password_input.delete(0, END)
-            file.close()
 # ---------------------------- Search Website ------------------------------- #
 
 
 def search():
+    website = website_input.get()
 
-    with (open("data.txt") as file):
-        lines = file.readlines()
-        found = False
-        for line in lines:
-            words = line.strip()
-            site_name = website_input.get()
-            if site_name in line:
-                words = words.split("|")
-                messagebox.showinfo(title="Details",
-                                    message=f"Website:{words[0]}\nEmail:{words[1]}\nPassword:{words[2]}")
-                found = True
-        if not found:
-            messagebox.showinfo(title="Website Error", message=f"{site_name} login details are not saved.")
+    try:
+        with open("data.json") as file:
+            data = json.load(file)
+
+    except FileNotFoundError:
+        messagebox.showinfo(title=f"No details saved", message="You have no website login details saved.\n"
+                                                               "Please save details for a site before searching.")
+
+    else:
+        try:
+            messagebox.showinfo(title=f"{website}", message=f""
+                                                            f"Email: {data[website]['email']}\n"
+                                                            f"Password: {data[website]['password']}")
+        except KeyError or FileNotFoundError:
+            messagebox.showinfo(title=f"{website} not Found", message=f"Login details for {website} not found."
+                                                                      f"Please add details for {website}.")
 
 # ---------------------------- UI SETUP ------------------------------- #
 
